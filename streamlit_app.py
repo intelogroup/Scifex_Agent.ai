@@ -20,6 +20,7 @@ class ScienceAnalysisAgent:
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
+        # Fix: Access the content directly
         return response.content
 
 st.set_page_config(page_title="Daily Science Analysis")
@@ -36,12 +37,11 @@ if st.button("Analyze", type="primary"):
                 agent = ScienceAnalysisAgent(api_key)
                 analysis = agent.analyze_date()
                 
-                # Display results in clean cards
-                for entry in analysis.split('\n\n'):
-                    if entry.strip():
-                        st.markdown("---")
-                        st.markdown(entry)
+                # Simply display the full response
+                st.markdown(analysis)
+                
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Error occurred: {str(e)}")
+            st.error("Full error details:", exc_info=True)
     else:
         st.error("Please enter your API key")
