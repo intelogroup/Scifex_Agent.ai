@@ -1,10 +1,10 @@
 import streamlit as st
-import anthropic
+from anthropic import Anthropic
 from datetime import datetime
 
 class ScienceAnalysisAgent:
     def __init__(self, api_key: str):
-        self.client = anthropic.Client(api_key=api_key)
+        self.client = Anthropic(api_key=api_key)
         self.model = "claude-3-sonnet-20240229"
         
     def analyze_date(self):
@@ -18,7 +18,10 @@ class ScienceAnalysisAgent:
         response = self.client.messages.create(
             model=self.model,
             max_tokens=1500,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
         )
         return response.content
 
@@ -32,6 +35,6 @@ if api_key and st.button("Get Today's Science Facts"):
         try:
             agent = ScienceAnalysisAgent(api_key)
             analysis = agent.analyze_date()
-            st.write(analysis)
+            st.markdown(analysis)
         except Exception as e:
             st.error(f"Error: {str(e)}")
