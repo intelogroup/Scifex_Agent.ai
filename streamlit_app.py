@@ -6,9 +6,10 @@ class ScienceAnalysisAgent:
     def __init__(self, api_key: str):
         self.client = Anthropic(api_key=api_key)
         
-    def analyze_date(self):
-        date = datetime.now().strftime('%B %d')  # Get current date in readable format
-        prompt = f"""Analyze 5 significant scientific discoveries on {date}. 
+    def analyze_date(self, selected_date):
+        # Convert the selected date to a string format like "January 01"
+        formatted_date = selected_date.strftime('%B %d')
+        prompt = f"""Analyze 5 significant scientific discoveries on {formatted_date}. 
         Format using markdown:
 
         ## Discovery 1
@@ -28,7 +29,7 @@ class ScienceAnalysisAgent:
         
         # Access the 'content' attribute, which contains a list of TextBlocks, and extract the 'text' from each
         if isinstance(response, dict):
-            # Handle the case where the response is a dictionary (could happen depending on Claude's API structure)
+            # Handle the case where the response is a dictionary
             return response.get('completion', response['content'][0].text)  # If response is a dictionary
         elif hasattr(response, 'content'):
             # Handle the TextBlock extraction from the 'content' attribute
@@ -41,7 +42,9 @@ class ScienceAnalysisAgent:
 st.set_page_config(page_title="Daily Science Analysis", layout="centered")
 
 st.title("🧬 Daily Science Analysis")
-st.subheader(f"Discoveries from {datetime.now().strftime('%B %d')}")
+
+# Create a date input widget
+selected_date = st.date_input("Select a date", value=datetime.now())
 
 api_key = st.text_input("Enter your Claude API key:", type="password")
 
@@ -50,7 +53,7 @@ if st.button("Analyze", type="primary"):
         try:
             with st.spinner("Analyzing..."):
                 agent = ScienceAnalysisAgent(api_key)
-                analysis = agent.analyze_date()
+                analysis = agent.analyze_date(selected_date)
 
                 # Display the markdown-formatted response
                 if analysis:
