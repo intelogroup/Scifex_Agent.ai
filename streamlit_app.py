@@ -25,7 +25,9 @@ class ScienceAnalysisAgent:
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
-        return response['completion']
+        
+        # Assuming response is an object, access the content property
+        return response['completion'] if 'completion' in response else response.content
 
 st.set_page_config(page_title="Daily Science Analysis", layout="centered")
 
