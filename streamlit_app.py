@@ -26,14 +26,17 @@ class ScienceAnalysisAgent:
             messages=[{"role": "user", "content": prompt}]
         )
         
-        # Check if the response is a TextBlock object and extract the text
-        if isinstance(response, dict) and 'completion' in response:
-            return response['completion']  # If the response is structured like this
-        elif isinstance(response, str):
-            return response  # If it's already a string
+        # Access the 'content' attribute, which contains a list of TextBlocks, and extract the 'text' from each
+        if isinstance(response, dict):
+            # Handle the case where the response is a dictionary (could happen depending on Claude's API structure)
+            return response.get('completion', response['content'][0].text)  # If response is a dictionary
+        elif hasattr(response, 'content'):
+            # Handle the TextBlock extraction from the 'content' attribute
+            text_blocks = response.content
+            full_text = ''.join([block.text for block in text_blocks])  # Concatenate all TextBlock texts
+            return full_text
         else:
-            # If the response is a TextBlock-like object, extract the text
-            return response.text if hasattr(response, 'text') else str(response)
+            return "Unexpected response format."
 
 st.set_page_config(page_title="Daily Science Analysis", layout="centered")
 
