@@ -13,13 +13,15 @@ class ScienceAnalysisAgent:
         Format using markdown:
 
         ## Discovery 1
+        **Day:** [day]
+        **Month:** [month]
         **Year:** [year]
         **Event:** [discovery name]
         **Simple Explanation:** [child-friendly explanation]
         **Current Use:** [current applications]
         **Future:** [future prospects]
 
-        (Repeat format for all 5 discoveries)"""
+        (Repeat format for all 10 discoveries)"""
         
         response = self.client.messages.create(
             model="claude-3-sonnet-20240229",
@@ -41,7 +43,7 @@ class ScienceAnalysisAgent:
 
 st.set_page_config(page_title="Daily Science Analysis", layout="centered")
 
-st.title("🧬 Daily Science Analysis")
+st.title("SCIFEX - Daily Science")
 
 # Create a date input widget
 selected_date = st.date_input("Select a date", value=datetime.now())
