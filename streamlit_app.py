@@ -9,10 +9,10 @@ class ScienceAnalysisAgent:
     def analyze_date(self, selected_date):
         # Convert the selected date to a string format like "January 01"
         formatted_date = selected_date.strftime('%B %d')
-        prompt = f"""Analyze 5 significant scientific discoveries on {formatted_date}. 
+        prompt = f"""Analyze 10 significant scientific discoveries on {formatted_date}. 
         Format using markdown:
 
-        ## Discovery 1
+        ## https://unicode.org/emoji/charts/full-emoji-list.html#1f607 Fact Number 1
         **Day:** [day]
         **Month:** [month]
         **Year:** [year]
