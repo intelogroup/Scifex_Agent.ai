@@ -8,19 +8,18 @@ class ScienceAnalysisAgent:
         
     def analyze_date(self):
         date = datetime.now()
-        prompt = f"""Find 5 significant scientific discoveries from {date.strftime('%B %d')} throughout history.
-        For each discovery, provide:
-        - The year and discovery name
-        - A simple child-friendly explanation
-        - Current applications
-        - Future prospects"""
+        prompt = """For exactly 5 scientific discoveries on this date, provide each in this exact format:
+        TITLE: [year] - [discovery name]
+        EXPLAIN: [child-friendly explanation]
+        CURRENT: [current applications]
+        FUTURE: [future prospects]
+        ---"""
         
         response = self.client.messages.create(
             model="claude-3-sonnet-20240229",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
-        # Fix: Access the content directly
         return response.content
 
 st.set_page_config(page_title="Daily Science Analysis")
@@ -37,11 +36,16 @@ if st.button("Analyze", type="primary"):
                 agent = ScienceAnalysisAgent(api_key)
                 analysis = agent.analyze_date()
                 
-                # Simply display the full response
-                st.markdown(analysis)
-                
+                # Display in cards using columns
+                for i in range(5):
+                    with st.container():
+                        st.markdown("---")
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            st.markdown("### 🔬 Discovery")
+                        with col2:
+                            st.info(analysis[i])
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
-            st.error("Full error details:", exc_info=True)
     else:
         st.error("Please enter your API key")
