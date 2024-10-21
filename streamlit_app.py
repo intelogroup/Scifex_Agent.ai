@@ -26,8 +26,14 @@ class ScienceAnalysisAgent:
             messages=[{"role": "user", "content": prompt}]
         )
         
-        # Assuming response is an object, access the content property
-        return response['completion'] if 'completion' in response else response.content
+        # Check if the response is a TextBlock object and extract the text
+        if isinstance(response, dict) and 'completion' in response:
+            return response['completion']  # If the response is structured like this
+        elif isinstance(response, str):
+            return response  # If it's already a string
+        else:
+            # If the response is a TextBlock-like object, extract the text
+            return response.text if hasattr(response, 'text') else str(response)
 
 st.set_page_config(page_title="Daily Science Analysis", layout="centered")
 
@@ -42,10 +48,13 @@ if st.button("Analyze", type="primary"):
             with st.spinner("Analyzing..."):
                 agent = ScienceAnalysisAgent(api_key)
                 analysis = agent.analyze_date()
-                
+
                 # Display the markdown-formatted response
-                st.markdown(analysis, unsafe_allow_html=True)  # Ensure markdown is rendered properly
-                
+                if analysis:
+                    st.markdown(analysis, unsafe_allow_html=True)  # Render the markdown
+                else:
+                    st.error("No response returned")
+
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
     else:
