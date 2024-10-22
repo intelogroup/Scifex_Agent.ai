@@ -9,91 +9,61 @@ class ScienceAnalysisAgent:
     def fetch_facts(self, selected_date):
         formatted_date = selected_date.strftime('%B %d')
         
-        prompt = f"""Find any scientific facts, events, births, or developments that occurred on {formatted_date} throughout history.
-        Include ALL types of scientific events, not just major ones:
-        - Scientific discoveries (any scale)
-        - Scientists' birthdays or death anniversaries
-        - Patent filings
-        - Journal publications
-        - Space events and observations
-        - Medical advancements
+        prompt = f"""List any scientific facts and events from {formatted_date} (any year). Include:
+        - Scientific discoveries
+        - Scientists' birthdays
+        - Inventions
+        - Space events
         - Technology developments
-        - Research publications
-        - Laboratory achievements
-        - Academic milestones
-        
-        Requirements:
-        1. Include events of any significance level
-        2. Include scientists' births and deaths
-        3. Include both major and minor developments
-        4. Include events from any time period
-        5. If exact year is known, include it
-        
-        Format each fact as:
-        ## 🔬 [Year if known] Scientific Fact
-        **What Happened:** [clear description]
-        **Field:** [area of science/technology]
-        **Context:** [brief background]
-        **Why Interesting:** [significance or impact]
-        
-        ---"""
+        - Medical breakthroughs
+        - Research milestones
 
-        response = self.client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=2000,
-            temperature=0.5,  # Increased to allow for more varied results
-            messages=[{
-                "role": "user", 
-                "content": prompt
-            }]
-        )
-        
-        if hasattr(response, 'content'):
-            return response.content
-        return "Unable to retrieve scientific facts for this date."
+        For each fact provide:
+        1. The year
+        2. What happened
+        3. Brief explanation
+        4. Why it matters
 
-st.set_page_config(page_title="SCIFEX - Daily Science Facts", layout="wide")
+        Write in clear, simple language."""
 
-st.title("🔬 SCIFEX - Daily Science Facts")
-st.subheader(f"Exploring Science History")
+        try:
+            response = self.client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=2000,
+                temperature=0.7,
+                messages=[{
+                    "role": "user", 
+                    "content": prompt
+                }]
+            )
+            
+            return response.content if hasattr(response, 'content') else None
+            
+        except Exception as e:
+            st.error(f"API Error: {str(e)}")
+            return None
 
-st.markdown("""
-This tool finds any scientific facts or events for your chosen date, including:
-- Discoveries and developments
-- Scientists' birthdays
-- Space events
-- Technology milestones
-- Research publications
-- And more!
-""")
+st.set_page_config(page_title="Daily Science Facts")
 
-col1, col2 = st.columns([2,1])
-with col1:
-    selected_date = st.date_input(
-        "Select a date",
-        value=datetime.now(),
-        help="Choose any date to explore"
-    )
-with col2:
-    api_key = st.text_input("Enter your Claude API key:", type="password")
+st.title("🔬 Daily Science Facts")
+st.subheader("Discover what happened in science history")
 
-if st.button("Find Facts", type="primary", use_container_width=True):
+selected_date = st.date_input("Select a date", value=datetime.now())
+api_key = st.text_input("Enter your Claude API key:", type="password")
+
+if st.button("Find Facts", type="primary"):
     if not api_key:
         st.error("Please enter your Claude API key.")
     else:
         try:
-            with st.spinner("Finding scientific facts and events..."):
+            with st.spinner("Searching..."):
                 agent = ScienceAnalysisAgent(api_key)
-                results = agent.fetch_facts(selected_date)
+                facts = agent.fetch_facts(selected_date)
                 
-                if "Scientific Fact" in results:
-                    st.markdown(results)
-                    st.success("Facts found! 🎉")
+                if facts:
+                    st.markdown(facts)
                 else:
-                    st.error("Error retrieving facts. Please try again.")
+                    st.warning("No facts found. Please try another date.")
                     
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-
-st.markdown("---")
-st.caption("Explore the fascinating world of science, one day at a time! 🌟")
+            st.error(f"Error: {str(e)}")
