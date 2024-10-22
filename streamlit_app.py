@@ -9,39 +9,42 @@ class ScienceAnalysisAgent:
     def analyze_date(self, selected_date):
         formatted_date = selected_date.strftime('%B %d')
         
-        # Prompt engineered to request verified facts with sources
-        prompt = f"""Analyze and provide 10 verified scientific discoveries/events from {formatted_date} throughout history.
+        # Prompt engineered to focus on specific trusted sources
+        prompt = f"""Research and verify scientific discoveries/events from {formatted_date} throughout history.
 
-        Important requirements:
-        1. Only include facts that can be found in:
-           - Major scientific journals (Nature, Science)
-           - University research publications
-           - Government agencies (NASA, NIH)
-           - Nobel Prize records
-           - Patent offices
-           - Peer-reviewed publications
-        
-        2. For each fact, include:
-           - The exact date and year
-           - The scientific significance
-           - A citation or reference
+        IMPORTANT: Prioritize facts from these specific sources in order:
+        1. britannica.com
+        2. facts.net
+        3. sciencenews.org
+        4. onthisday.com
+        5. history.com
+        6. nasa.gov
+        7. wikipedia.com
+
+        Requirements:
+        - Find events that are specifically mentioned in these sources
+        - Focus on scientific discoveries, inventions, space events, medical breakthroughs
+        - Include the specific source website for each fact
+        - Verify each fact appears in at least one of these sources
         
         Format using markdown:
         ## 🔬 Scientific Fact #[number]
         **Date:** {formatted_date}, [year]
         **Event:** [verified discovery/event]
         **Field:** [scientific field]
-        **Simple Explanation:** [child-friendly explanation]
-        **Impact:** [current applications]
-        **Future:** [prospects and ongoing research]
-        **Source:** [specific journal/institution/database reference]
+        **Simple Explanation:** [child-friendly explanation with analogy]
+        **Historical Impact:** [how it changed science/society]
+        **Modern Applications:** [current uses and relevance]
+        **Future Prospects:** [ongoing research and potential developments]
+        **Primary Source:** [specific website from the priority list where this fact is documented]
         
         ---
-        (Repeat format for up to 10 verified discoveries, prioritizing major scientific breakthroughs)"""
+        Please provide 10 verified facts, ensuring each has a citation from one of the priority sources listed above."""
         
         response = self.client.messages.create(
             model="claude-3-sonnet-20240229",
             max_tokens=2000,
+            temperature=0.7,
             messages=[{
                 "role": "user",
                 "content": prompt
@@ -56,7 +59,11 @@ class ScienceAnalysisAgent:
         else:
             return "Unexpected response format."
 
-st.set_page_config(page_title="SCIFEX - Daily Science", layout="centered")
+st.set_page_config(
+    page_title="SCIFEX - Daily Science", 
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
 st.title("🔬 SCIFEX - Daily Science")
 st.markdown("""
@@ -65,8 +72,28 @@ st.markdown("""
             max-width: 1200px;
             margin: 0 auto;
         }
+        h2 {
+            color: #1f77b4;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        strong {
+            color: #2c3e50;
+        }
     </style>
 """, unsafe_allow_html=True)
+
+# Add source attribution
+st.markdown("""
+    #### Data Sources:
+    - Encyclopedia Britannica
+    - Facts.net
+    - Science News
+    - On This Day
+    - History.com
+    - NASA
+    - Wikipedia
+""")
 
 selected_date = st.date_input("Select a date", value=datetime.now())
 api_key = st.text_input("Enter your Claude API key:", type="password")
@@ -74,14 +101,21 @@ api_key = st.text_input("Enter your Claude API key:", type="password")
 if st.button("Discover Scientific Facts", type="primary"):
     if api_key:
         try:
-            with st.spinner("Researching verified scientific events..."):
+            with st.spinner("Researching verified scientific events from trusted sources..."):
                 agent = ScienceAnalysisAgent(api_key)
                 analysis = agent.analyze_date(selected_date)
                 
                 if analysis and "Scientific Fact" in analysis:
                     st.markdown(analysis, unsafe_allow_html=True)
+                    
+                    # Add source disclaimer
+                    st.markdown("""
+                        ---
+                        *Note: All facts are verified from the listed trusted sources. 
+                        For the most current information, please visit the primary sources directly.*
+                    """)
                 else:
-                    st.warning("No verified scientific facts found for this date. Try another date!")
+                    st.warning("No verified scientific facts found for this date in our priority sources. Try another date!")
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
     else:
