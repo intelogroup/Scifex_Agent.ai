@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 from anthropic import Anthropic
 from datetime import datetime
@@ -16,19 +15,13 @@ class ScienceScraper:
         self.ctx.verify_mode = ssl.CERT_NONE
         
     def clean_text(self, text):
-        """Clean scraped text by removing HTML and extra whitespace"""
-        # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', text)
-        # Remove multiple spaces and newlines
         text = re.sub(r'\s+', ' ', text)
-        # Remove leading/trailing whitespace
         text = text.strip()
-        # Remove citations [1], [2], etc.
         text = re.sub(r'\[\d+\]', '', text)
         return text
 
     def extract_year(self, text):
-        """Extract year from text, ensuring it's between 1000 and current year"""
         current_year = datetime.now().year
         year_match = re.search(r'\b(1\d{3}|20[0-2]\d)\b', text)
         if year_match:
@@ -47,7 +40,6 @@ class ScienceScraper:
             with urllib.request.urlopen(req, context=self.ctx, timeout=10) as response:
                 return response.read().decode('utf-8', errors='ignore')
         except Exception as e:
-            st.warning(f"Failed to access {url}: {str(e)}")
             return None
 
     def scrape_wikipedia(self, date):
@@ -57,28 +49,21 @@ class ScienceScraper:
         events = []
         
         if content:
-            # Look for Events section
-            events_section = re.search(r'Events.*?(?=\n\n)', content, re.DOTALL)
-            if events_section:
-                content = events_section.group(0)
-                # Split into individual events
-                event_lines = content.split('\n')
-                for line in event_lines:
-                    if any(keyword in line.lower() for keyword in 
-                          ['science', 'discovery', 'astronomy', 'physics', 'chemistry',
-                           'biology', 'technology', 'invention', 'spacecraft', 'nasa']):
-                        year = self.extract_year(line)
-                        if year:
-                            clean_text = self.clean_text(line)
-                            # Remove the year from the beginning of the text
-                            event_text = re.sub(f'^{year}[^a-zA-Z]*', '', clean_text)
-                            if event_text:
-                                events.append({
-                                    'source': 'Wikipedia',
-                                    'url': url,
-                                    'text': event_text,
-                                    'year': year
-                                })
+            for line in content.split('\n'):
+                if any(keyword in line.lower() for keyword in 
+                      ['science', 'discovery', 'astronomy', 'physics', 'chemistry',
+                       'biology', 'technology', 'invention', 'spacecraft', 'nasa']):
+                    year = self.extract_year(line)
+                    if year:
+                        clean_text = self.clean_text(line)
+                        event_text = re.sub(f'^{year}[^a-zA-Z]*', '', clean_text)
+                        if event_text:
+                            events.append({
+                                'source': 'Wikipedia',
+                                'url': url,
+                                'text': event_text,
+                                'year': year
+                            })
         return events
 
     def scrape_britannica(self, date):
@@ -88,56 +73,30 @@ class ScienceScraper:
         events = []
         
         if content:
-            # Find all event sections
-            event_sections = re.finditer(r'(\d{4}).*?(?=\d{4}|$)', content, re.DOTALL)
-            for section in event_sections:
-                text = section.group(0)
-                if any(keyword in text.lower() for keyword in 
-                      ['science', 'discovery', 'astronomy', 'physics', 'chemistry',
-                       'biology', 'technology', 'invention']):
-                    year = self.extract_year(text)
-                    if year:
-                        clean_text = self.clean_text(text)
-                        events.append({
-                            'source': 'Britannica',
-                            'url': url,
-                            'text': clean_text,
-                            'year': year
-                        })
+            event_matches = re.finditer(r'(\d{4})[^\n]*?(?:science|discovery|astronomy|physics|chemistry|biology|technology|invention)', content.lower())
+            for match in event_matches:
+                text = match.group(0)
+                year = self.extract_year(text)
+                if year:
+                    clean_text = self.clean_text(text)
+                    events.append({
+                        'source': 'Britannica',
+                        'url': url,
+                        'text': clean_text,
+                        'year': year
+                    })
         return events
-
-    # ... [Other scraping methods remain the same]
 
 class ScienceAnalysisAgent:
     def __init__(self, api_key: str):
         self.client = Anthropic(api_key=api_key)
         self.scraper = ScienceScraper()
         
-    def format_fact(self, fact):
-        """Format a single fact for display"""
-        return f"""
-        <div class="fact-card">
-            <div class="fact-header">
-                <div class="fact-source-year">
-                    <span class="fact-source">{fact['source']}</span>
-                    <span class="fact-year">{fact['year']}</span>
-                </div>
-            </div>
-            <div class="fact-content">
-                <p class="fact-text">{fact['text']}</p>
-                <a href="{fact['url']}" target="_blank" class="fact-link">
-                    Verify Source <span class="link-arrow">→</span>
-                </a>
-            </div>
-        </div>
-        """
-
     def analyze_date(self, selected_date):
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(self.scraper.scrape_wikipedia, selected_date): "Wikipedia",
                 executor.submit(self.scraper.scrape_britannica, selected_date): "Britannica"
-                # Add other scrapers as they're implemented
             }
             
             all_facts = []
@@ -147,20 +106,34 @@ class ScienceAnalysisAgent:
                     if facts:
                         all_facts.extend(facts)
                 except Exception as e:
-                    source = futures[future]
-                    st.warning(f"Error fetching from {source}: {str(e)}")
+                    pass
 
         if not all_facts:
             return None
 
-        # Sort facts by year
         all_facts.sort(key=lambda x: x['year'])
         
-        # Format all facts
-        formatted_facts = [self.format_fact(fact) for fact in all_facts]
+        formatted_facts = []
+        for i, fact in enumerate(all_facts, 1):
+            formatted_facts.append(f"""
+            <div class="fact-card">
+                <div class="fact-header">
+                    <div class="fact-source-year">
+                        <span class="fact-source">{fact['source']}</span>
+                        <span class="fact-year">{fact['year']}</span>
+                    </div>
+                </div>
+                <div class="fact-content">
+                    <p class="fact-text">{fact['text']}</p>
+                    <a href="{fact['url']}" target="_blank" class="fact-link">
+                        Verify Source <span class="link-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+            """)
+        
         return "\n".join(formatted_facts)
 
-# Streamlit UI
 st.set_page_config(page_title="SCIFEX - Science Facts", layout="centered")
 
 st.markdown("""
@@ -243,4 +216,3 @@ if st.button("🔍 Discover Facts", type="primary", use_container_width=True):
             st.error(f"Error: {str(e)}")
     else:
         st.error("Please enter your API key.")
-```
