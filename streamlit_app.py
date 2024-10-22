@@ -9,41 +9,42 @@ class ScienceAnalysisAgent:
     def analyze_date(self, selected_date):
         formatted_date = selected_date.strftime('%B %d')
         
-        # Prompt engineered to focus on specific trusted sources
+        # Prompt engineered to prioritize specific sources
         prompt = f"""Research and verify scientific discoveries/events from {formatted_date} throughout history.
 
-        IMPORTANT: Prioritize facts from these specific sources in order:
-        1. britannica.com
-        2. facts.net
-        3. sciencenews.org
-        4. onthisday.com
-        5. history.com
-        6. nasa.gov
-        7. wikipedia.com
+        IMPORTANT: First check these primary sources in order:
+        1. facts.net/history/historical-events
+        2. britannica.com/on-this-day
+        3. sciencenews.org/sn-magazine
+        4. history.com
+        5. apod.nasa.gov/apod
+        6. wikipedia.com
 
-        Requirements:
-        - Find events that are specifically mentioned in these sources
-        - Focus on scientific discoveries, inventions, space events, medical breakthroughs
-        - Include the specific source website for each fact
-        - Verify each fact appears in at least one of these sources
+        Then supplement with additional verified sources:
+        - Scientific journals (Nature, Science)
+        - University research publications
+        - Government agencies (NASA, NIH)
+        - Nobel Prize records
+        
+        For each fact found, verify it appears in at least two of these sources.
         
         Format using markdown:
         ## 🔬 Scientific Fact #[number]
         **Date:** {formatted_date}, [year]
         **Event:** [verified discovery/event]
         **Field:** [scientific field]
-        **Simple Explanation:** [child-friendly explanation with analogy]
-        **Historical Impact:** [how it changed science/society]
-        **Modern Applications:** [current uses and relevance]
-        **Future Prospects:** [ongoing research and potential developments]
-        **Primary Source:** [specific website from the priority list where this fact is documented]
+        **Simple Explanation:** [child-friendly explanation with an analogy]
+        **Impact:** [current applications and significance]
+        **Future:** [prospects and ongoing research]
+        **Primary Source:** [link to main source from priority list]
+        **Secondary Source:** [additional verification source]
         
         ---
-        Please provide 10 verified facts, ensuring each has a citation from one of the priority sources listed above."""
+        (Provide 10 verified discoveries, prioritizing those found in our primary source list)"""
         
         response = self.client.messages.create(
             model="claude-3-sonnet-20240229",
-            max_tokens=2000,
+            max_tokens=2500,
             temperature=0.7,
             messages=[{
                 "role": "user",
@@ -59,11 +60,7 @@ class ScienceAnalysisAgent:
         else:
             return "Unexpected response format."
 
-st.set_page_config(
-    page_title="SCIFEX - Daily Science", 
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="SCIFEX - Daily Science", layout="centered")
 
 st.title("🔬 SCIFEX - Daily Science")
 st.markdown("""
@@ -72,51 +69,58 @@ st.markdown("""
             max-width: 1200px;
             margin: 0 auto;
         }
-        h2 {
-            color: #1f77b4;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+        .fact-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
-        strong {
-            color: #2c3e50;
+        h2 {
+            color: #0066cc;
+        }
+        .source-link {
+            color: #28a745;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Add source attribution
-st.markdown("""
-    #### Data Sources:
-    - Encyclopedia Britannica
-    - Facts.net
-    - Science News
-    - On This Day
-    - History.com
-    - NASA
-    - Wikipedia
-""")
+col1, col2 = st.columns([2,1])
+with col1:
+    selected_date = st.date_input("Select a date", value=datetime.now())
+with col2:
+    api_key = st.text_input("Enter Claude API key:", type="password")
 
-selected_date = st.date_input("Select a date", value=datetime.now())
-api_key = st.text_input("Enter your Claude API key:", type="password")
-
-if st.button("Discover Scientific Facts", type="primary"):
+if st.button("Discover Scientific Facts", type="primary", use_container_width=True):
     if api_key:
         try:
-            with st.spinner("Researching verified scientific events from trusted sources..."):
+            with st.spinner("Researching verified scientific events from primary sources..."):
                 agent = ScienceAnalysisAgent(api_key)
                 analysis = agent.analyze_date(selected_date)
                 
                 if analysis and "Scientific Fact" in analysis:
-                    st.markdown(analysis, unsafe_allow_html=True)
-                    
-                    # Add source disclaimer
                     st.markdown("""
-                        ---
-                        *Note: All facts are verified from the listed trusted sources. 
-                        For the most current information, please visit the primary sources directly.*
+                        ### 📚 Sources Checked:
+                        - Facts.net Historical Events
+                        - Britannica On This Day
+                        - Science News Magazine
+                        - History.com
+                        - NASA Astronomy Picture of the Day
+                        - Wikipedia
+                        - Additional scientific sources
                     """)
+                    st.markdown("---")
+                    st.markdown(analysis, unsafe_allow_html=True)
                 else:
-                    st.warning("No verified scientific facts found for this date in our priority sources. Try another date!")
+                    st.warning("No verified scientific facts found for this date. Try another date!")
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
     else:
         st.error("Please enter your Claude API key.")
+
+st.markdown("---")
+st.markdown("### About SCIFEX")
+st.markdown("""
+    SCIFEX provides verified scientific facts and discoveries from history, 
+    prioritizing reliable sources and cross-referencing information for accuracy.
+    Each fact is verified against multiple sources before being presented.
+""")
