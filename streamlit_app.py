@@ -6,33 +6,31 @@ class ScienceAnalysisAgent:
     def __init__(self, api_key: str):
         self.client = Anthropic(api_key=api_key)
         
-    def fetch_structured_facts(self, selected_date):
+    def fetch_facts(self, selected_date):
         formatted_date = selected_date.strftime('%B %d')
         
-        prompt = f"""Please check {formatted_date} on these specific websites and provide ONLY facts that you can actually see on these pages:
+        prompt = f"""Based on your knowledge, provide verified scientific events, discoveries, and breakthroughs that occurred on {formatted_date} throughout history.
 
-        1. Visit https://www.onthisday.com/science/
-        2. Visit https://www.britannica.com/on-this-day/{selected_date.month}/{selected_date.day}
-        3. Visit https://www.history.com/this-day-in-history
-        
-        For each fact found:
-        1. Include ONLY facts that are explicitly shown on these websites
-        2. Include the direct URL where the fact was found
-        3. Copy the exact text as written on the website
-        4. Include only science, technology, space, and medical discoveries
-        
-        Format your response in markdown as:
-        ### 🔬 Found on [Website Name]
-        **Source:** [exact URL]
-        **Date:** [exact date as shown]
-        **Original Text:** [exact text from website]
-        
+        Requirements:
+        1. Only include events that you are highly confident about
+        2. Focus on major scientific breakthroughs, space events, medical discoveries, and technological innovations
+        3. Include the exact year and a reference if possible
+        4. Skip social or political events unless they have major scientific impact
+        5. Only include events you can cite with a specific source
+
+        Format as:
+        ## Scientific Event [Year]
+        **Event:** [description]
+        **Field:** [area of science]
+        **Significance:** [why it matters]
+        **Reference:** [source where this can be verified]
+
         ---"""
 
         response = self.client.messages.create(
             model="claude-3-sonnet-20240229",
             max_tokens=2000,
-            temperature=0, # Set to 0 for most factual response
+            temperature=0.1,
             messages=[{
                 "role": "user", 
                 "content": prompt
@@ -41,72 +39,50 @@ class ScienceAnalysisAgent:
         
         if hasattr(response, 'content'):
             return response.content
-        else:
-            return "No facts could be retrieved from the sources."
+        return "No verified scientific events found for this date."
 
-st.set_page_config(page_title="SCIFEX - Historical Science Facts", layout="wide")
+st.set_page_config(page_title="SCIFEX - Scientific History", layout="wide")
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .stApp {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    .source-header {
-        color: #0366d6;
-        padding: 10px 0;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.title("🔬 SCIFEX - Scientific History")
 
-st.title("🔬 SCIFEX - Historical Science Facts")
-st.markdown("### Direct Source Scientific Events Archive")
+st.info("""
+This tool provides information about historical scientific events based on verified sources. 
+Each fact includes references where possible for further reading and verification.
+""")
 
-# Information about sources
-with st.expander("ℹ️ About Data Sources"):
-    st.markdown("""
-    This tool fetches scientific facts directly from:
-    - OnThisDay.com Science Section
-    - Britannica's On This Day
-    - History.com's This Day in History
-    
-    Only facts that are explicitly present on these websites are shown.
-    Each fact includes its source URL for verification.
-    """)
-
-# Date selection
 selected_date = st.date_input(
     "Select a date",
     value=datetime.now(),
-    help="Choose a date to find historical scientific events"
+    help="Choose a date to explore scientific history"
 )
 
-# API key input
 api_key = st.text_input("Enter your Claude API key:", type="password")
 
-# Main button
-if st.button("Find Scientific Events", type="primary", use_container_width=True):
+if st.button("Discover Scientific Events", type="primary"):
     if not api_key:
         st.error("Please enter your Claude API key.")
     else:
         try:
-            with st.spinner("Fetching scientific events from sources..."):
+            with st.spinner("Researching scientific events..."):
                 agent = ScienceAnalysisAgent(api_key)
-                results = agent.fetch_structured_facts(selected_date)
+                results = agent.fetch_facts(selected_date)
                 
-                if "Found on" in results:
+                if "Scientific Event" in results:
                     st.markdown(results)
-                    st.success("✅ Facts retrieved successfully! Click the source links to verify.")
+                    st.markdown("---")
+                    st.info("📚 Click the references to learn more about each event.")
                 else:
-                    st.warning("No scientific events found for this date in our sources.")
+                    st.warning("""
+                    No major scientific events found for this specific date. 
+                    Try another date or broaden the search criteria.
+                    """)
                     
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
 # Footer
 st.markdown("---")
-st.markdown("""
-    **Note:** All information is sourced directly from historical archives and includes source links for verification.
-    The tool only reports facts that are explicitly present on the source websites.
+st.caption("""
+Note: This tool uses Claude's knowledge base to find verified scientific events. 
+While we strive for accuracy, always cross-reference with primary sources for research purposes.
 """)
