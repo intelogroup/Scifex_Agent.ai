@@ -67,8 +67,7 @@ class ScienceScraper:
         return events
 
     def scrape_britannica(self, date):
-        formatted_date = date.strftime('%B-%d')
-        url = f"https://www.britannica.com/on-this-day/{formatted_date}"
+        url = f"https://www.britannica.com/on-this-day/"
         
         content = self.safe_get(url)
         events = []
