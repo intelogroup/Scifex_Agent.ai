@@ -51,8 +51,8 @@ class ScienceScraper:
         if content:
             for line in content.split('\n'):
                 if any(keyword in line.lower() for keyword in 
-                      ['science', 'discovery', 'astronomy', 'physics', 'chemistry',
-                       'biology', 'technology', 'invention', 'spacecraft', 'nasa']):
+                      ['science', 'discovery', 'astronomy', 'physics', 'chemistry','astronomy','industry','nobel',
+                       'biology', 'technology', 'invention', 'history','medicine','event','spacecraft', 'nasa']):
                     year = self.extract_year(line)
                     if year:
                         clean_text = self.clean_text(line)
@@ -69,6 +69,7 @@ class ScienceScraper:
     def scrape_britannica(self, date):
         formatted_date = date.strftime('%B-%d')
         url = f"https://www.britannica.com/on-this-day/{formatted_date}"
+        
         content = self.safe_get(url)
         events = []
         
